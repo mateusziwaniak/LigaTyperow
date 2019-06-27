@@ -1,5 +1,6 @@
 from os import system, name
 from datetime import datetime
+from calendar import monthrange
 
 # Global variable to keep data about registered users.
 USERS = {'admin': {'admin': True, 'password': '123'},
@@ -7,9 +8,9 @@ USERS = {'admin': {'admin': True, 'password': '123'},
          'user2': {'admin': False, 'password': '123', 'score': 0},}
 
 # Global variable to keep data about all matches.
-MATCHES = [[99, 'Legia W', 'Lech P', '', datetime(2019, 6, 27, 19, 00)],
-                 [98, 'Zaglebie L', "Slask W", '', datetime(2019, 6, 27, 19, 00)],
-                 [97, 'Wisla K', 'Pogon Sz', '', datetime(2019, 6, 27, 19, 00)],
+MATCHES = [[99, 'Legia W', 'Lech P', '', datetime(2019, 6, 27, 20, 00)],
+                 [98, 'Zaglebie L', "Slask W", '', datetime(2019, 6, 27, 20, 00)],
+                 [97, 'Wisla K', 'Pogon Sz', '', datetime(2019, 6, 27, 20, 00)],
                  [96, 'Piast G', 'Gornik Z', '', datetime(2019, 6, 23, 19, 00)],
                  [95, 'Lechia G', 'Jagielonia B', '', datetime(2019, 6, 23, 19, 00)],
                  [94, 'Zawisza B', 'Miedz L', '', datetime(2019, 6, 23, 19, 00)]]
@@ -50,34 +51,37 @@ class User:
     # Method to sign in for new user.
     def add_user(self):
         USERS[self.user_name] = {}
-        password = input("\tPlease set your password: ")
-        re_password = input("\tPlease repeat your password: ")
-        if password == re_password:
-            USERS[self.user_name]['password'] = password
-            USERS[self.user_name]['admin'] = False
-            USERS[self.user_name]['score'] = 0
-            ARCHIVES[self.user_name] = []
-            print("\tUser", self.user_name, "added successful.")
+        password = input("\tPlease set your password. At least 3 characters: ")
+        if len(password) >= 3:
+            re_password = input("\tPlease repeat your password: ")
+            if password == re_password:
+                USERS[self.user_name]['password'] = password
+                USERS[self.user_name]['admin'] = False
+                USERS[self.user_name]['score'] = 0
+                ARCHIVES[self.user_name] = []
+                print("\tUser", self.user_name, "added successful.")
+            else:
+                print("\tPassword don't match.")
         else:
-            print("\tPassword don't match.")
+            print("\tPassword is too short. Try again.")
         input("\n\tPress ENTER to continue...")
 
     # Method to remove user. Possible only from admin account.
     def remove_user(self):
         clear_screen()
-        if self.user_name in USERS.keys():
-            security_password = input("\tPlease enter admin password to confirm: ")
-            if security_password == USERS['admin']['password']:
-                del USERS[self.user_name]
-                print("\tUser", self.user_name, "had been removed.")
+        if self.user_name != 'admin':
+            if self.user_name in USERS.keys():
+                security_password = input("\tPlease enter admin password to confirm: ")
+                if security_password == USERS['admin']['password']:
+                    del USERS[self.user_name]
+                    print("\tUser", self.user_name, "had been removed.")
+                else:
+                    print("\tWrong admin password.")
             else:
-                print("\tWrong admin password.")
+                print("\tSuch USER does not exist.")
         else:
-            print("\tSuch USER does not exist.")
+            print("\tIt's not possible to remove admin.")
         input("\n\tPress ENTER to continue...")
-
-    def edit_user(self):
-        pass
 
     # Method to bet matches by user. User is able to bet only this matches which didn't start yet.
     def bet_matches(self):
@@ -175,12 +179,30 @@ class Menu:
                 away = input("\tPlease enter away team name: ")
                 result = None
                 print("\tPlease enter date of the match: ")
-                year = int(input("\tYear: "))
-                month = int(input("\tMonth: "))
-                day = int(input("\tDay: "))
-                hour = int(input("\tHour: "))
-                minutes = int(input("\tMinutes: "))
-                Match(home, away, result, year, month, day, hour, minutes).add_match()
+
+                year = input("\tYear: ")
+                current_year = datetime.now().year
+                while year not in [str(current_year), str(current_year + 1)]:
+                    year = input("\tWrong year, please try again: ")
+
+                month = input("\tMonth: ")
+                while month not in [str(x) for x in range(1, 13)]:
+                    month = input("\tWrong month, please try again: ")
+
+                day = input("\tDay: ")
+                last_day = monthrange(int(year), int(month))[1]
+                while day not in [str(x) for x in range(1, last_day + 1)]:
+                    day = input("\tWrong day, please try again: ")
+
+                hour = input("\tHour: ")
+                while hour not in [str(x) for x in range(1, 24)]:
+                    hour = input("\tWrong hour, please try again: ")
+
+                minutes = input("\tMinutes: ")
+                while minutes not in [str(x) for x in range(0, 61)]:
+                    minutes = input("\tWrong minute, please try again: ")
+
+                Match(home, away, result, int(year), int(month), int(day), int(hour), int(minutes)).add_match()
 
             elif choice == '2':
                 Match.show_matches()
