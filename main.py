@@ -1,6 +1,10 @@
+import pytest
+
 from os import system, name
 from datetime import datetime
 from calendar import monthrange
+from prettytable import PrettyTable
+
 
 # Global variable to keep data about registered users.
 USERS = {'admin': {'admin': True, 'password': '123'},
@@ -8,12 +12,12 @@ USERS = {'admin': {'admin': True, 'password': '123'},
          'user2': {'admin': False, 'password': '123', 'score': 0},}
 
 # Global variable to keep data about all matches.
-MATCHES = [[99, 'Legia W', 'Lech P', '', datetime(2019, 6, 27, 20, 00)],
-                 [98, 'Zaglebie L', "Slask W", '', datetime(2019, 6, 27, 20, 00)],
-                 [97, 'Wisla K', 'Pogon Sz', '', datetime(2019, 6, 27, 20, 00)],
-                 [96, 'Piast G', 'Gornik Z', '', datetime(2019, 6, 23, 19, 00)],
-                 [95, 'Lechia G', 'Jagielonia B', '', datetime(2019, 6, 23, 19, 00)],
-                 [94, 'Zawisza B', 'Miedz L', '', datetime(2019, 6, 23, 19, 00)]]
+MATCHES = [[99, 'Legia W', 'Lech P', '', datetime(2019, 6, 29, 20, 00)],
+                 [98, 'Zaglebie L', "Slask W", '-', datetime(2019, 6, 29, 20, 00)],
+                 [97, 'Wisla K', 'Pogon Sz', '-', datetime(2019, 6, 29, 20, 00)],
+                 [96, 'Piast G', 'Gornik Z', '-', datetime(2019, 6, 29, 19, 00)],
+                 [95, 'Lechia G', 'Jagielonia B', '-', datetime(2019, 6, 29, 19, 00)],
+                 [94, 'Zawisza B', 'Miedz L', '-', datetime(2019, 6, 29, 19, 00)]]
 
 # Global variable to keep data about actual bets.
 BETS = {'user1': [],
@@ -26,18 +30,27 @@ ARCHIVES = {}
 match_id = 0
 
 
+class TestClass:
+
+    def test_login_admin(self):
+        login = "admin"
+        password = "123"
+        assert User(login, password).authorization()
+
+
 # Class about users.
 class User:
 
-    def __init__(self, user_name):
+    def __init__(self, user_name, password):
         self.user_name = user_name
+        self.password = password
 
     # Authorization method for log in to the system.
     def authorization(self):
 
         if self.user_name in USERS.keys():
-            password = input("\tPlease enter your PASSWORD: ")
-            if password == USERS[self.user_name]['password']:
+
+            if self.password == USERS[self.user_name]['password']:
                 print("\n\tAccess aproved.",
                       "\n\tWelcome", self.user_name, "!")
                 return True
@@ -49,6 +62,7 @@ class User:
             return False
 
     # Method to sign in for new user.
+    # @pytest.mark.parametrize('self.username, )
     def add_user(self):
         USERS[self.user_name] = {}
         password = input("\tPlease set your password. At least 3 characters: ")
@@ -99,8 +113,10 @@ class User:
         clear_screen()
         print()
         if self.user_name in BETS.keys():
+            table = PrettyTable(["Lp", "Home Team", "Away Team", "Bet"])
             for i, match in enumerate(BETS[self.user_name], 1):
-                print("\t", i, match[1], "-", match[2], "   Bet:", match[3])
+                table.add_row([i, match[1], match[2], match[3]])
+            print(table)
         input("\n\tPress ENTER to continue...")
 
     # Method to update score for each User. It adds points and move bets from BETS to ARCHIVE.
@@ -142,7 +158,8 @@ class Menu:
 
             if choice == "1":
                 login = input("\n\tPlease enter your LOGIN: ")
-                approved = User(login).authorization()
+                password = input("\tPlease enter your PASSWORD: ")
+                approved = User(login, password).authorization()
 
                 if approved and USERS[login]['admin']:
                     Menu(login).menu_admin()
@@ -152,7 +169,12 @@ class Menu:
 
             elif choice == "2":
                 login_name = input("\n\tPlease enter new LOGIN: ")
-                User(login_name).add_user()
+                if login_name in USERS.keys():
+                    print("\tSuch User already exist. Try again.")
+                    input("\n\tPress ENTER to continue...")
+                else:
+                    User(login_name).add_user()
+
 
             elif choice == "0":
                 print("\n\n\t### Good Bye! ###\n\n")
@@ -177,7 +199,7 @@ class Menu:
             if choice == '1':
                 home = input("\n\tPlease enter home team name: ")
                 away = input("\tPlease enter away team name: ")
-                result = None
+                result = "-"
                 print("\tPlease enter date of the match: ")
 
                 year = input("\tYear: ")
@@ -202,6 +224,7 @@ class Menu:
                 while minutes not in [str(x) for x in range(0, 61)]:
                     minutes = input("\tWrong minute, please try again: ")
 
+
                 Match(home, away, result, int(year), int(month), int(day), int(hour), int(minutes)).add_match()
 
             elif choice == '2':
@@ -216,10 +239,11 @@ class Menu:
 
             elif choice == '5':
                 clear_screen()
-
+                table = PrettyTable(["Lp.", "LOGIN"])
                 for i, user in enumerate(USERS.keys(), 0):
                     if user != "admin":
-                        print("\t", i, user)
+                        table.add_row(([i, user]))
+                print(table)
                 input("\n\tPress ENTER to continue...")
 
             elif choice == '0':
@@ -242,8 +266,8 @@ class Menu:
             if choice == '1':
                 User.score_update()
                 print()
-                for position, user in enumerate(Match.score_table(), 1):
-                    print("\t", position, user[0], user[1])
+                print(Match.score_table())
+
                 input("\n\tPress ENTER to continue...")
 
             elif choice == '2':
@@ -274,8 +298,10 @@ class Match:
     def show_matches():
         clear_screen()
         print()
+        table = PrettyTable(["Home Team", "Away Team", "Result", "Date"])
         for match in MATCHES:
-            print("\t", match[1], "-", match[2], '|  Result:', match[3], "|  Date:", match[4])
+            table.add_row([match[1], match[2], match[3], match[4]])
+        print(table)
         input("\n\tPress ENTER to continue...")
 
     # Method to update match score by Admin.
@@ -283,7 +309,7 @@ class Match:
         clear_screen()
         print()
         for i, match in enumerate(MATCHES):
-            if MATCHES[i][3] == '' and match[4] < datetime.now():
+            if MATCHES[i][3] == '-' and match[4] < datetime.now():
                 print("\tSet result for:", match[1], " - ", match[2])
                 MATCHES[i][3] = int(input("\tSet result: "))
 
@@ -293,9 +319,13 @@ class Match:
         table = []
         for name in USERS.keys():
             if name != 'admin':
-                table.append((name, USERS[name]['score']))
+                table.append([name, USERS[name]['score']])
         table.sort(key=lambda table: table[1], reverse=True)
-        return table
+        rank = PrettyTable(["Ranking", "Name", "Score"])
+        for i, row in enumerate(table, 1):
+            rank.add_row([i, row[0], row[1]])
+
+        return rank
 
 
 # Function to clear screen in Windows OS or Linux.
@@ -309,4 +339,5 @@ print(USERS)
 print(MATCHES)
 print(ARCHIVES)
 print(BETS)
+
 
